@@ -1,12 +1,17 @@
-require 'kandianying'
+require_relative 'bundle/bundler/setup'
 require 'json'
 require 'config_env'
 require 'aws-sdk'
+require 'httparty'
 require_relative 'models/english_cinema'
 require_relative 'models/chinese_cinema'
 
-unless ENV['RACK_ENV'] == 'production'
-  ConfigEnv.path_to_config("#{__dir__}/config/config_env.rb")
+ConfigEnv.path_to_config("#{__dir__}/config/config_env.rb")
+
+API =
+if ENV['RACK_ENV'] == 'production'
+  'https://kandianying-dymano.herokuapp.com/api/v1/'
+else 'http://localhost:9292/api/v1/'
 end
 
 LOCATION = {
@@ -33,7 +38,7 @@ LOCATION = {
 
 LANGUAGES = %w(english chinese)
 
-result_for_db = Hash.new do |lang, v|
+results = Hash.new do |lang, v|
   lang[v] = Hash.new do |city, va|
     city[va] = Hash.new { |key, val| key[val] = {} }
   end
@@ -42,34 +47,24 @@ end
 LANGUAGES.each do |language|
   LOCATION.keys.each do |city|
     LOCATION[city].each do |vie_amb, codes|
-      if vie_amb == 'vieshow'
-        codes.each do |code|
-          cinema = HsinChuMovie::Vieshow.new(code, language)
-          result_for_db[language][city]['vieshow'][code] = {
-            'cinema_name' => cinema.cinema_name,
-            'movie_names' => cinema.movie_names,
-            'movie_table' => cinema.movie_table
-          }
-          puts "Done with #{cinema.cinema_name}"
-          sleep rand(0..3)
-        end
-      elsif vie_amb == 'ambassador'
-        codes.each do |code|
-          cinema = HsinChuMovie::Ambassador.new(code, language)
-          result_for_db[language][city]['ambassador'][code] = {
-            'cinema_name' => cinema.cinema_name,
-            'movie_names' => cinema.movie_names,
-            'movie_table' => cinema.movie_table
-          }
-          puts "Done with #{cinema.cinema_name}"
-          sleep rand(0..3)
-        end
-      end; end; end
+      codes.each do |code|
+        names = HTTParty.get "#{API}#{vie_amb}/#{language}/#{code}/movies"
+        table = HTTParty.get "#{API}#{vie_amb}/#{language}/#{code}.json"
+        table = table.body.gsub('=>', ':')
+        results[language][city][vie_amb][code] = {
+          'cinema_name' => JSON.parse(table).keys[0],
+          'movie_names' => JSON.parse(names.body),
+          'movie_table' => JSON.parse(table)
+        }
+        puts "Done: #{results[language][city][vie_amb][code]['cinema_name']}"
+      end
+    end
+  end
 end
 
 LOCATION.keys.each do |city|
   en_cinema = EnglishCinema.new(
-    location: city, data: result_for_db['english'][city].to_json
+    location: city, data: results['english'][city]
   )
   if en_cinema.save
     EnglishCinema.where(location: city).each do |e|
@@ -78,7 +73,7 @@ LOCATION.keys.each do |city|
     sleep 1
   end
   ch_cinema = ChineseCinema.new(
-    location: city, data: result_for_db['chinese'][city].to_json
+    location: city, data: results['chinese'][city]
   )
   next unless ch_cinema.save
   ChineseCinema.where(location: city).each do |e|
