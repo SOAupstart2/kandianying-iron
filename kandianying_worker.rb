@@ -1,4 +1,3 @@
-require_relative 'bundle/bundler/setup'
 require 'kandianying'
 require 'json'
 require 'config_env'
