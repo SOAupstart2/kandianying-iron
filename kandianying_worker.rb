@@ -6,7 +6,9 @@ require 'aws-sdk'
 require_relative 'models/english_cinema'
 require_relative 'models/chinese_cinema'
 
-ConfigEnv.path_to_config("#{__dir__}/config/config_env.rb")
+unless ENV['RACK_ENV'] == 'production'
+  ConfigEnv.path_to_config("#{__dir__}/config/config_env.rb")
+end
 
 LOCATION = {
   'kaohsiung' => { 'vieshow' => %w(01),
