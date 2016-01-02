@@ -40,7 +40,6 @@ end
 
 LANGUAGES.each do |language|
   LOCATION.keys.each do |city|
-    # break unless city == 'kaohsiung'
     LOCATION[city].each do |vie_amb, codes|
       if vie_amb == 'vieshow'
         codes.each do |code|
@@ -51,7 +50,7 @@ LANGUAGES.each do |language|
             'movie_table' => cinema.movie_table
           }
           puts "Done with #{cinema.cinema_name}"
-          # sleep rand(0..3)
+          sleep rand(0..3)
         end
       elsif vie_amb == 'ambassador'
         codes.each do |code|
@@ -62,41 +61,27 @@ LANGUAGES.each do |language|
             'movie_table' => cinema.movie_table
           }
           puts "Done with #{cinema.cinema_name}"
-          # sleep rand(0..3)
+          sleep rand(0..3)
         end
       end; end; end
 end
 
-en_cinema = EnglishCinema.new(
-  date: Date.today.to_s, kaohsiung: result_for_db['english']['kaohsiung'],
-  taichung: result_for_db['english']['taichung'],
-  tainan: result_for_db['english']['tainan'],
-  hsinchu: result_for_db['english']['hsinchu'],
-  taipei: result_for_db['english']['taipei'],
-  new_taipei_city: result_for_db['english']['new taipei city'],
-  toufen: result_for_db['english']['toufen'],
-  pingtung: result_for_db['english']['pingtung'],
-  kinmen: result_for_db['english']['kinmen']
-)
-if en_cinema.save
-  puts "Done for #{Date.today} with #{en_cinema.id}"
-  sleep 5
-  EnglishCinema.all.each { |e| e.destroy unless e.id == en_cinema.id }
-  sleep 5
-end
-ch_cinema = ChineseCinema.new(
-  date: Date.today.to_s, kaohsiung: result_for_db['chinese']['kaohsiung'],
-  taichung: result_for_db['chinese']['taichung'],
-  tainan: result_for_db['chinese']['tainan'],
-  hsinchu: result_for_db['chinese']['hsinchu'],
-  taipei: result_for_db['chinese']['taipei'],
-  new_taipei_city: result_for_db['chinese']['new taipei city'],
-  toufen: result_for_db['chinese']['toufen'],
-  pingtung: result_for_db['chinese']['pingtung'],
-  kinmen: result_for_db['chinese']['kinmen']
-)
-if ch_cinema.save
-  puts "Done for #{Date.today} with #{ch_cinema.id}"
-  sleep 5
-  ChineseCinema.all.each { |e| e.destroy unless e.id == ch_cinema.id }
+LOCATION.keys.each do |city|
+  en_cinema = EnglishCinema.new(
+    location: city, data: result_for_db['english'][city].to_json
+  )
+  if en_cinema.save
+    EnglishCinema.where(location: city).each do |e|
+      e.destroy unless e.id == en_cinema.id
+    end
+    sleep 1
+  end
+  ch_cinema = ChineseCinema.new(
+    location: city, data: result_for_db['chinese'][city].to_json
+  )
+  next unless ch_cinema.save
+  ChineseCinema.where(location: city).each do |e|
+    e.destroy unless e.id == ch_cinema.id
+  end
+  sleep 1
 end
