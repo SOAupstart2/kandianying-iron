@@ -1,4 +1,5 @@
 config/config.json
+config/config_env.rb
 iron.json
 bundle/
 .bundle/
