@@ -6,13 +6,11 @@ require 'httparty'
 require_relative 'models/english_cinema'
 require_relative 'models/chinese_cinema'
 
-ConfigEnv.path_to_config("#{__dir__}/config/config_env.rb")
-
-API =
-if ENV['RACK_ENV'] == 'production'
-  'https://kandianying-dymano.herokuapp.com/api/v1/'
-else 'http://localhost:9292/api/v1/'
-end
+# ConfigEnv.path_to_config("#{__dir__}/config/config_env.rb")
+# API = 'http://localhost:9292/api/v1/'
+config = JSON.parse(File.read('config/config.json'))
+ENV.update config
+API = 'https://kandianying-dymano.herokuapp.com/api/v1/'
 
 LOCATION = {
   'kaohsiung' => { 'vieshow' => %w(01),
@@ -44,21 +42,23 @@ results = Hash.new do |lang, v|
   end
 end
 
+count = 0
 LANGUAGES.each do |language|
   LOCATION.keys.each do |city|
     LOCATION[city].each do |vie_amb, codes|
       codes.each do |code|
         names = HTTParty.get "#{API}#{vie_amb}/#{language}/#{code}/movies"
+        names = names.body
         table = HTTParty.get "#{API}#{vie_amb}/#{language}/#{code}.json"
         table = table.body.gsub('=>', ':')
         results[language][city][vie_amb][code] = {
-          'cinema_name' => JSON.parse(table).keys[0],
-          'movie_names' => JSON.parse(names.body),
-          'movie_table' => JSON.parse(table)
+          'movie_names' => names,
+          'movie_table' => table
         }
-        puts "Done: #{results[language][city][vie_amb][code]['cinema_name']}"
       end
     end
+    count += 1
+    puts "Done: #{count}"
   end
 end
 

@@ -43,3 +43,6 @@ DEPENDENCIES
   config_env
   dynamoid (~> 1)
   httparty
+
+BUNDLED WITH
+   1.11.2
