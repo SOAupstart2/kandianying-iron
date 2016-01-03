@@ -3,6 +3,7 @@ require 'json'
 require 'config_env'
 require 'aws-sdk'
 require 'httparty'
+require 'base64'
 require_relative 'models/english_cinema'
 require_relative 'models/chinese_cinema'
 
@@ -48,9 +49,9 @@ LANGUAGES.each do |language|
     LOCATION[city].each do |vie_amb, codes|
       codes.each do |code|
         names = HTTParty.get "#{API}#{vie_amb}/#{language}/#{code}/movies"
-        names = names.body
+        names = Base64.urlsafe_encode64(names.body)
         table = HTTParty.get "#{API}#{vie_amb}/#{language}/#{code}.json"
-        table = table.body.gsub('=>', ':')
+        table = Base64.urlsafe_encode64(table.body.gsub('=>', ':'))
         results[language][city][vie_amb][code] = {
           'movie_names' => names,
           'movie_table' => table
