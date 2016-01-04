@@ -4,6 +4,6 @@ require_relative '../config/database'
 class ChineseCinema
   include Dynamoid::Document
 
-  field :location, :string
+  field :location, :string, unique: true
   field :data, :string
 end

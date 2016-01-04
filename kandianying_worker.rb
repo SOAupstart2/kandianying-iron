@@ -64,21 +64,14 @@ LANGUAGES.each do |language|
 end
 
 LOCATION.keys.each do |city|
-  en_cinema = EnglishCinema.new(
-    location: city, data: results['english'][city]
-  )
-  if en_cinema.save
-    EnglishCinema.where(location: city).each do |e|
-      e.destroy unless e.id == en_cinema.id
-    end
+  EnglishCinema.where(location: city).each do |e|
+    e.data = results['english'][city]
+    e.save
     sleep 1
   end
-  ch_cinema = ChineseCinema.new(
-    location: city, data: results['chinese'][city]
-  )
-  next unless ch_cinema.save
   ChineseCinema.where(location: city).each do |e|
-    e.destroy unless e.id == ch_cinema.id
+    e.data = results['chinese'][city]
+    e.save
+    sleep 1
   end
-  sleep 1
 end
